@@ -1,37 +1,25 @@
 import os
-import logging
-from aiogram import Bot, Dispatcher, executor, types
+import telebot
 from openai import OpenAI
 
-logging.basicConfig(level=logging.INFO)
-
-# Load tokens from environment variables
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-bot = Bot(token=TELEGRAM_TOKEN)
-dp = Dispatcher(bot)
+bot = telebot.TeleBot(BOT_TOKEN)
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+@bot.message_handler(func=lambda msg: True)
+def reply(message):
+    user_text = message.text
 
-@dp.message_handler()
-async def chatgpt_reply(message: types.Message):
-    """Reply to Telegram users with ChatGPT response"""
-    try:
-        user_text = message.text
+    completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "user", "content": user_text}
+        ]
+    )
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": user_text}]
-        )
+    answer = completion.choices[0].message["content"]
+    bot.send_message(message.chat.id, answer)
 
-        answer = response.choices[0].message["content"]
-        await message.answer(answer)
-
-    except Exception as e:
-        print("Error:", e)
-        await message.answer("⚠️ Error, please check the bot logs.")
-
-
-if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+bot.polling()
