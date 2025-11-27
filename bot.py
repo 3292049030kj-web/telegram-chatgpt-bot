@@ -1,46 +1,26 @@
-import logging
-import os
-from aiogram import Bot, Dispatcher, types
-from aiogram.utils import executor
-from openai import OpenAI
+import telegram
+from telegram.ext import Updater, MessageHandler, Filters
+import openai
 
-# 从 Render 环境变量获取 Token
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+BOT_TOKEN = "8204695273:AAFsodphzWnC9TbEhMN3_-A9mWIoE12ukKY"
+OPENAI_API_KEY = "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 Key"
 
-# 创建 Telegram bot
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
+openai.api_key = OPENAI_API_KEY
 
-# 创建 OpenAI 客户端
-client = OpenAI(api_key=OPENAI_API_KEY)
+def reply(update, context):
+    user_text = update.message.text
 
-logging.basicConfig(level=logging.INFO)
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",   # 免费可用
+        messages=[{"role": "user", "content": user_text}],
+    )
 
-@dp.message_handler(commands=['start', 'help'])
-async def start_handler(message: types.Message):
-    await message.reply("🤖 你好！我是你的 ChatGPT 机器人。\n请发送任何消息，我会回复你。")
+    bot_reply = response["choices"][0]["message"]["content"]
+    update.message.reply_text(bot_reply)
 
-@dp.message_handler()
-async def chat_handler(message: types.Message):
-    user_text = message.text
+updater = Updater(BOT_TOKEN, use_context=True)
+handler = MessageHandler(Filters.text & (~Filters.command), reply)
+updater.dispatcher.add_handler(handler)
 
-    try:
-        # 调用 OpenAI Chat Completion (新 API)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "user", "content": user_text}
-            ]
-        )
-
-        reply_text = response.choices[0].message.content
-        await message.reply(reply_text)
-
-    except Exception as e:
-        await message.reply("⚠️ 出错了：" + str(e))
-        print("OpenAI 错误：", e)
-
-
-if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+updater.start_polling()
+updater.idle()
