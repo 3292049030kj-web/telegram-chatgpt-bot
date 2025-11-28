@@ -1,6 +1,4 @@
-import telegram
 from telegram.ext import Updater, MessageHandler, Filters
-import openai
 
 BOT_TOKEN = "8204695273:AAFsodphzWnC9TbEhMN3_-A9mWIoE12ukKY"
 OPENAI_API_KEY = "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"
