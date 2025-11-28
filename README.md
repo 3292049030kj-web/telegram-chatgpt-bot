@@ -6,3 +6,4 @@
 - 初始版本  
 - 2025-11-28：更新 README.md  
 
+Update bot
