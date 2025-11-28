@@ -1,21 +1,23 @@
 import telegram
 from telegram.ext import Updater, MessageHandler, Filters
-import openai
+from openai import OpenAI
 
-BOT_TOKEN = "8204695273:AAFsodphzWnC9TbEhMN3_-A9mWIoE12ukKY"
-OPENAI_API_KEY = "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"
+import os
 
-openai.api_key = OPENAI_API_KEY
+BOT_TOKEN = os.getenv("8204695273:AAFsodphzWnC9TbEhMN3_-A9mWIoE12ukKY")
+OPENAI_API_KEY = os.getenv("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")
+
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 def reply(update, context):
     user_text = update.message.text
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": user_text}],
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",       # 免费可用
+        messages=[{"role": "user", "content": user_text}]
     )
 
-    bot_reply = response["choices"][0]["message"]["content"]
+    bot_reply = response.choices[0].message.content
     update.message.reply_text(bot_reply)
 
 updater = Updater(BOT_TOKEN, use_context=True)
