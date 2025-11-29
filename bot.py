@@ -1,6 +1,7 @@
 import os
 import logging
 from telegram.ext import Updater, MessageHandler, Filters
+from telegram import InputFile
 import openai
 
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +16,6 @@ if not BOT_TOKEN or not OPENAI_API_KEY:
 
 openai.api_key = OPENAI_API_KEY
 
-
 def reply(update, context):
     user_text = update.message.text or ""
 
@@ -25,14 +25,13 @@ def reply(update, context):
             messages=[{"role": "user", "content": user_text}],
             max_tokens=200,
         )
-        bot_reply = resp['choices'][0]['message']['content'].strip()
+        bot_reply = resp["choices"][0]["message"]["content"].strip()
 
     except Exception as e:
         logger.exception("OpenAI request failed")
         bot_reply = "Error contacting OpenAI: " + str(e)
 
     update.message.reply_text(bot_reply)
-
 
 def main():
     updater = Updater(BOT_TOKEN, use_context=True)
@@ -42,7 +41,6 @@ def main():
     logger.info("Bot started polling...")
     updater.start_polling()
     updater.idle()
-
 
 if __name__ == "__main__":
     main()
