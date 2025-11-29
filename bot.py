@@ -1,7 +1,7 @@
 import os
 import logging
 from telegram.ext import Updater, MessageHandler, Filters
-from openai import OpenAI
+import openai
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -10,22 +10,23 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 if not BOT_TOKEN or not OPENAI_API_KEY:
-    raise RuntimeError("Missing BOT_TOKEN or OPENAI_API_KEY")
+    logger.error("Missing BOT_TOKEN or OPENAI_API_KEY environment variables.")
+    raise RuntimeError("Set BOT_TOKEN and OPENAI_API_KEY in environment variables.")
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+openai.api_key = OPENAI_API_KEY
 
 def reply(update, context):
     user_text = update.message.text or ""
-
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": user_text}]
+        resp = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": user_text}],
+            max_tokens=500,
         )
-        bot_reply = response.choices[0].message.content
+        bot_reply = resp['choices'][0]['message']['content'].strip()
     except Exception as e:
-        logger.exception("OpenAI error")
-        bot_reply = "OpenAI API 调用失败：" + str(e)
+        logger.exception("OpenAI request failed")
+        bot_reply = "Error contacting OpenAI: " + str(e)
 
     update.message.reply_text(bot_reply)
 
@@ -33,9 +34,9 @@ def main():
     updater = Updater(BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
     dp.add_handler(MessageHandler(Filters.text & (~Filters.command), reply))
-
+    logger.info("Starting bot polling...")
     updater.start_polling()
     updater.idle()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
