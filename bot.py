@@ -1,7 +1,7 @@
 import os
 import logging
-from telegram.ext import Updater, MessageHandler, Filters
-from telegram import InputFile
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 import openai
 
 logging.basicConfig(level=logging.INFO)
@@ -11,12 +11,12 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not BOT_TOKEN or not OPENAI_API_KEY:
-    logger.error("Missing BOT_TOKEN or OPENAI_API_KEY environment variables.")
-    raise RuntimeError("Set BOT_TOKEN and OPENAI_API_KEY in environment variables.")
+    raise RuntimeError("Missing BOT_TOKEN or OPENAI_API_KEY environment variables.")
 
 openai.api_key = OPENAI_API_KEY
 
-def reply(update, context):
+
+async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text or ""
 
     try:
@@ -25,22 +25,24 @@ def reply(update, context):
             messages=[{"role": "user", "content": user_text}],
             max_tokens=200,
         )
-        bot_reply = resp["choices"][0]["message"]["content"].strip()
+        bot_reply = resp['choices'][0]['message']['content'].strip()
 
     except Exception as e:
-        logger.exception("OpenAI request failed")
-        bot_reply = "Error contacting OpenAI: " + str(e)
+        logger.error("OpenAI request failed: %s", e)
+        bot_reply = "Error contacting OpenAI."
 
-    update.message.reply_text(bot_reply)
+    await update.message.reply_text(bot_reply)
 
-def main():
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
-    dp.add_handler(MessageHandler(Filters.text & (~Filters.command), reply))
 
-    logger.info("Bot started polling...")
-    updater.start_polling()
-    updater.idle()
+async def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
+
+    logger.info("Bot started...")
+    await app.run_polling()
+
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
