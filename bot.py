@@ -23,7 +23,7 @@ def reply(update, context):
         resp = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": user_text}],
-            max_tokens=500,
+            max_tokens=200,
         )
         bot_reply = resp['choices'][0]['message']['content'].strip()
 
@@ -39,7 +39,7 @@ def main():
     dp = updater.dispatcher
     dp.add_handler(MessageHandler(Filters.text & (~Filters.command), reply))
 
-    logger.info("Starting bot polling...")
+    logger.info("Bot started polling...")
     updater.start_polling()
     updater.idle()
 
