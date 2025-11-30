@@ -22,11 +22,17 @@ async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text or ""
 
     try:
-        resp = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_text}],
-            max_tokens=200,
+        # 🔥 openai 0.28 是同步 API，因此必须放到 executor 里
+        loop = asyncio.get_event_loop()
+        resp = await loop.run_in_executor(
+            None,
+            lambda: openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": user_text}],
+                max_tokens=200,
+            ),
         )
+
         bot_reply = resp["choices"][0]["message"]["content"].strip()
 
     except Exception as e:
@@ -38,9 +44,10 @@ async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
 
-    logger.info("Bot started...")
+    logger.info("Bot started…")
     await app.run_polling()
 
 
